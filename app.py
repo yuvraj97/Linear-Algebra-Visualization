@@ -10,13 +10,42 @@ def input_vector(s: str):
     s = s.replace("[", "")
     s = s.replace("]", "")
     for i in range(len(s)):
-        if(s[i].isnumeric() or s[i]==',' or s[i]=='-'): 
+        if(s[i].isnumeric() or s[i]==',' or s[i]=='-' or s[i]=='.' ): 
             continue
         else:
             return None, False
     l = s.split(",")
-    return np.array([int(l[0]), int(l[1])]), True
+    l[0], l[1] = float(l[0]), float(l[1])
+    return np.array(l), True
     
+def input_tf_matrix(s: str):
+    s = s.replace(" ", "")
+    s = s.replace("[", "")
+    s = s.replace("]", "")
+    for i in range(len(s)):
+        if(s[i].isnumeric() or s[i]==',' or s[i]=='-' or s[i]==';' or s[i]=='.'): 
+            continue
+        else:
+            return None, False
+    l = s.split(";")
+    l[0] = l[0].split(',')
+    l[1] = l[1].split(',')
+    l[0][0] = float(l[0][0])
+    l[0][1] = float(l[0][1])
+    l[1][0] = float(l[1][0])
+    l[1][1] = float(l[1][1])
+    return np.array(l), True
+
+def reduce_to_k_decimal(n,k=3):
+    print(n,int(n * 10**k)/10**k)
+    return int(n * 10**k)/10**k
+
+def mat_dec(m,k=3):
+    for v in m:
+        v[0] = reduce_to_k_decimal(v[0],k)
+        v[1] = reduce_to_k_decimal(v[1],k)
+
+
 def str_vec(v):
     s = "[" + str(v[0]) + ", " + str(v[1]) + "]"
     return s
@@ -37,10 +66,37 @@ def main():
     vectors = load()
     
     st.write("Enter the transformation matrix")
+
+    
+    #"""             Add a Vector             """
+    label = 'Syntax(witout quotes): "A, B; C, D" or "[A, B; C, D]" or "[[A, B]; [C, D]]" '
+    m = st.text_input(label, value="[1.0,  2.0;   2.0,  3.0]")
+    try:
+        matrix, status = input_tf_matrix(m)
+    except:
+        status = False
+    if(status==False):
+        st.error('Invalid input, input should be like(without quotes): "A, B; C, D" or "[A, B; C, D]" or "[[A, B]; [C, D]]" ')
+    #else:
+    a,b,c,d = matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]
+    
+    st.sidebar.markdown("## Interact with Transformation matrix")
+    a = st.sidebar.slider('A', a-10, a+10, a, 0.1)
+    b = st.sidebar.slider('B', b-10, b+10, b, 0.1)
+    c = st.sidebar.slider('C', c-10, c+10, c, 0.1)
+    d = st.sidebar.slider('D', d-10, d+10, d, 0.1)
+   
+    
     st.latex(r'''\begin{bmatrix}
      A & B\\  
      C & D\\
-    \end{bmatrix}''')
+    \end{bmatrix}=
+    \begin{bmatrix}
+     ''' + str(a) + ''' & ''' + str(b) + '''\\\\
+     ''' + str(c) + ''' & ''' + str(d) + '''
+    \end{bmatrix}
+    
+    ''')
     
     #st.latex(r'''
     #a + ar + a r^2 + a r^3 + \cdots + a r^{n-1} =
@@ -48,21 +104,11 @@ def main():
     #a \left(\frac{1-r^{n}}{1-r}\right)
     #''')
 
-    a = st.number_input("A", value=1)
-    b = st.number_input("B", value=0)
-    c = st.number_input("C", value=0)
-    d = st.number_input("D", value=1)
-    
-    st.sidebar.latex(r'''\begin{bmatrix}
-     ''' + str(a) + ''' & ''' + str(b) + '''\\\\
-     ''' + str(c) + ''' & ''' + str(d) + '''
-    \end{bmatrix}''')
-    
-    a = st.sidebar.slider('A', a-20, a+20, a, 1)
-    b = st.sidebar.slider('B', b-20, b+20, b, 1)
-    c = st.sidebar.slider('C', c-20, c+20, c, 1)
-    d = st.sidebar.slider('D', d-20, d+20, d, 1)
-    
+    #st.sidebar.latex(r'''\begin{bmatrix}
+    # ''' + str(a) + ''' & ''' + str(b) + '''\\\\
+    # ''' + str(c) + ''' & ''' + str(d) + '''
+    #\end{bmatrix}''')
+
     transform_matrix = np.array([
                                     [a,b],
                                     [c,d],
@@ -73,13 +119,11 @@ def main():
     for i in range(len(vectors)):
         str_vectors.append(str_vec(vectors[i]))
     
+    st.sidebar.markdown("## Add/Remove Vectors")
     #"""             Add a Vector             """
-    if(len(vectors)!=0):
-        label = str_vec(vectors[-1])
-    else:
-        label = "[1, 2]"
-    v = st.text_input("Add more vectors", value=label)
-    if st.button("Add more vectors"):
+    label = "[1.0, 2.0]"
+    v = st.sidebar.text_input("Add more vectors", value=label)
+    if st.sidebar.button("Add"):
         try:
             vector, status = input_vector(v)
         except:
@@ -92,9 +136,9 @@ def main():
             str_vectors.append(str_vec(vector))
     
     #"""             Remove a Vector             """
-    remove_vec = st.number_input("Remove a vector(Specify index[1 base])      specify -1 to remove last added vector)", value=1)
+    remove_vec = st.sidebar.number_input("Remove a vector(Specify index[1 base])      specify -1 to remove last added vector)", value=1)
     remove_vec -= 1
-    if st.button("Remove"):
+    if st.sidebar.button("Remove"):
         status = input_vector(v)
         if(len(vectors)==0):
             st.error("There isn't any vector to remove")
@@ -107,6 +151,8 @@ def main():
             vectors = np.delete(vectors, remove_vec, 0)
             save(vectors)
         
+    st.sidebar.markdown("## Vectors")
+    st.sidebar.markdown("**(you can also change there values)**")
     text_vectors = []
     for i in range(len(vectors)):
         text_vectors.append(st.sidebar.text_input('v'+str(i+1), value=str_vectors[i]))
@@ -121,12 +167,26 @@ def main():
     if (len(vectors)>=1):
         transform = tf.Transform(transform_matrix)
         transform.add_vectors(vectors)
+        mat_dec(transform.transformed_vectors)
         orignal_plt, transform_plt = transform.fig()
         st.pyplot(orignal_plt)
         st.pyplot(transform_plt)
     
     
-
+        s = []
+        for i in range(len(vectors)):
+            temp = r'''    \begin{bmatrix}
+         ''' + str(vectors[i,0]) + '''\\\\
+         ''' + str(vectors[i,1]) + '''
+        \end{bmatrix} \\to \\begin{bmatrix}
+         ''' + str(transform.transformed_vectors[i,0]) + '''\\\\
+         ''' + str(transform.transformed_vectors[i,1]) + '''
+        \\end{bmatrix}'''
+            s.append(temp)
+        
+        st.markdown("Transformed vectors:")
+        for i in range(len(s)):
+            st.latex("v_"+str(i+1)+":"+s[i])
 
 if __name__ == "__main__":
     main()

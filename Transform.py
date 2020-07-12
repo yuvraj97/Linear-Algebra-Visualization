@@ -16,13 +16,14 @@ class Transform:
         self._plot_orig_ = vt("Original vectors")
         self._plot_tf_   = vt("Transformed vectors")
         self._fig_       = plt.figure()
+        self.transformed_vectors = None
         #plt.close()
     
     
     def add_vectors(self, vectors, origin=np.array([0,0])):
-        transformed_vectors = np.matmul(self.transform, vectors.T).T
+        self.transformed_vectors = np.matmul(self.transform, vectors.T).T
         self._plot_orig_.add_vectors(vectors)
-        self._plot_tf_.add_vectors(transformed_vectors)
+        self._plot_tf_.add_vectors(self.transformed_vectors)
         #self._plot_orig_._fig_.show()
         #self._plot_tf_._fig_.show()
     
