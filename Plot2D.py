@@ -12,19 +12,21 @@ SIZE = 14
 plt.rc('font', size=SIZE)   
 
 class Plot2DVectors:
-    def __init__(self, head_width=0.3, head_length=0.2):
+    def __init__(self, title="", head_width=0.3, head_length=0.2):
         self._x_range_   = None
         self._y_range_   = None
         self._fig_       = plt.figure()
+        #plt.close()
         self.vectors     = None
         self.head_width  = head_width
         self.head_length = head_length
+        plt.title(title)
         
         
-    def add_vectors(self, vectors, origin=np.array([0,0])):
+    def add_vectors(self, vectors, origin=np.array([0,0]), color="b"):
         self.vectors   = vectors
-        self._x_range_   = [vectors[:,0].min() - 2, vectors[:,0].max() + 2]
-        self._y_range_   = [vectors[:,1].min() - 2, vectors[:,1].max() + 2]
+        self._x_range_   = [min(vectors[:,0].min(), 0) - 2, max(vectors[:,0].max() + 2, 0)]
+        self._y_range_   = [min(vectors[:,1].min(), 0) - 2, max(vectors[:,1].max() + 2, 0)]
         
         ax = self._fig_.gca()
         for v in self.vectors:
@@ -36,7 +38,7 @@ class Plot2DVectors:
         ax.set_ylabel("Y-axis")
         self.set_axes_limit()
         #self._fig_ = plt.gcf()
-        plt.close()
+        #plt.close()
         
     def add_vector(self,vector, origin=np.array([0,0])):
         ax = self._fig_.gca()
@@ -59,7 +61,7 @@ class Plot2DVectors:
         ax.set_ylabel("Y-axis")
         self.set_axes_limit()
         #self._fig_ = plt.gcf()
-        plt.close()
+        #plt.close()
     
     def setX_limit(self):
         ax = self._fig_.gca()
@@ -80,7 +82,7 @@ class Plot2DVectors:
         self._fig_.set_size_inches(8,6)
         self._fig_.savefig(name, dpi = 100)
         #self._fig_.savefig(name, bbox_inches='tight')
-        plt.close()
+        #plt.close()
         
     def fig(self):
         return self._fig_
@@ -100,7 +102,7 @@ vectors = 5*np.array([
                    ])
 origin = np.array([0,0])
 
-plt2D = Plot2D()
+plt2D = Plot2DVectors("Vectors")
 plt2D.add_vectors(vectors, origin)
 #plt2D.savefig()
 
