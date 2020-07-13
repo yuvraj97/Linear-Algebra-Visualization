@@ -44,8 +44,7 @@ def mat_dec(m,k=3):
     for v in m:
         v[0] = reduce_to_k_decimal(v[0],k)
         v[1] = reduce_to_k_decimal(v[1],k)
-
-
+    
 def str_vec(v):
     s = "[" + str(v[0]) + ", " + str(v[1]) + "]"
     return s
@@ -65,10 +64,11 @@ def main():
     #                   ])
     vectors = load()
     
-    st.write("Enter the transformation matrix")
+    
+    st.markdown("# Enter the transformation matrix")
 
     
-    #"""             Add a Vector             """
+    ########################      Specify Transformation matrix      ###############################
     label = 'Syntax(witout quotes): "A, B; C, D" or "[A, B; C, D]" or "[[A, B]; [C, D]]" '
     m = st.text_input(label, value="[1.0,  2.0;   2.0,  3.0]")
     try:
@@ -77,16 +77,20 @@ def main():
         status = False
     if(status==False):
         st.error('Invalid input, input should be like(without quotes): "A, B; C, D" or "[A, B; C, D]" or "[[A, B]; [C, D]]" ')
-    #else:
-    a,b,c,d = matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]
+    ################################################################################################
     
+    
+    ########################      Add Sliders for Transformation matrix      #######################
+    a,b,c,d = matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]
     st.sidebar.markdown("## Interact with Transformation matrix")
     a = st.sidebar.slider('A', a-10, a+10, a, 0.1)
     b = st.sidebar.slider('B', b-10, b+10, b, 0.1)
     c = st.sidebar.slider('C', c-10, c+10, c, 0.1)
     d = st.sidebar.slider('D', d-10, d+10, d, 0.1)
-   
+    ################################################################################################
     
+    
+    ########################      Display Transformation matrix      ###############################
     st.latex(r'''\begin{bmatrix}
      A & B\\  
      C & D\\
@@ -97,32 +101,19 @@ def main():
     \end{bmatrix}
     
     ''')
-    
-    #st.latex(r'''
-    #a + ar + a r^2 + a r^3 + \cdots + a r^{n-1} =
-    #\sum_{k=0}^{n-1} ar^k =
-    #a \left(\frac{1-r^{n}}{1-r}\right)
-    #''')
-
-    #st.sidebar.latex(r'''\begin{bmatrix}
-    # ''' + str(a) + ''' & ''' + str(b) + '''\\\\
-    # ''' + str(c) + ''' & ''' + str(d) + '''
-    #\end{bmatrix}''')
-
-    transform_matrix = np.array([
-                                    [a,b],
-                                    [c,d],
-                                ])
+    ################################################################################################
     
     
+    ########################      Convert Vectors to a displayable string      #####################
     str_vectors = []
     for i in range(len(vectors)):
         str_vectors.append(str_vec(vectors[i]))
+    ################################################################################################
     
     st.sidebar.markdown("## Add/Remove Vectors")
-    #"""             Add a Vector             """
+    ########################      Add a Vectors      ###############################################
     label = "[1.0, 2.0]"
-    v = st.sidebar.text_input("Add more vectors", value=label)
+    v = st.sidebar.text_input('Add vector,  Syntax(witout quotes): "A, B" or "[A, B]"', value=label)
     if st.sidebar.button("Add"):
         try:
             vector, status = input_vector(v)
@@ -134,8 +125,9 @@ def main():
             vectors = np.vstack((vectors, vector))
             save(vectors)
             str_vectors.append(str_vec(vector))
+    ################################################################################################
     
-    #"""             Remove a Vector             """
+    ########################      Remove a Vector      ############################################
     remove_vec = st.sidebar.number_input("Remove a vector(Specify index[1 base])      specify -1 to remove last added vector)", value=1)
     remove_vec -= 1
     if st.sidebar.button("Remove"):
@@ -150,7 +142,11 @@ def main():
         else:
             vectors = np.delete(vectors, remove_vec, 0)
             save(vectors)
-        
+    
+    ################################################################################################
+    
+    
+    ################################      Vectors      #############################################
     st.sidebar.markdown("## Vectors")
     st.sidebar.markdown("**(you can also change there values)**")
     text_vectors = []
@@ -164,11 +160,21 @@ def main():
             break
         vectors[i] = vector
     
+    ################################################################################################
+    ################################################################################################
+    ################################################################################################
+    
     if (len(vectors)>=1):
-        transform = tf.Transform(transform_matrix)
+        vector_label = st.checkbox("Wanna keep all vectors' labels", value = True)
+        transform_matrix = np.array([
+                                        [a,b],
+                                        [c,d],
+                                    ])
+        transform = tf.Transform(transform_matrix, vector_label)
         transform.add_vectors(vectors)
         mat_dec(transform.transformed_vectors)
-        orignal_plt, transform_plt = transform.fig()
+        orignal_plt, transform_plt, combine_plt = transform.fig()
+        st.pyplot(combine_plt)
         st.pyplot(orignal_plt)
         st.pyplot(transform_plt)
     
@@ -184,9 +190,11 @@ def main():
         \\end{bmatrix}'''
             s.append(temp)
         
-        st.markdown("Transformed vectors:")
+        st.markdown("## Transformed vectors:")
         for i in range(len(s)):
             st.latex("v_"+str(i+1)+":"+s[i])
+
+################################################################################################
 
 if __name__ == "__main__":
     main()

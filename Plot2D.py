@@ -8,31 +8,33 @@ Created on Thu Jul  9 07:21:15 2020
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-SIZE = 14
+SIZE = 8
 plt.rc('font', size=SIZE)   
 
 class Plot2DVectors:
-    def __init__(self, title="", head_width=0.3, head_length=0.2):
-        self._x_range_   = None
-        self._y_range_   = None
+    def __init__(self, title="", vector_label = True, head_width=0.3, head_length=0.2):
+        self.vector_label = vector_label
+        self._x_range_   = [0, 0]
+        self._y_range_   = [0, 0]
         self._fig_       = plt.figure()
         #plt.close()
         self.vectors     = None
         self.head_width  = head_width
         self.head_length = head_length
         plt.title(title)
+        plt.grid()
         
-        
-    def add_vectors(self, vectors, origin=np.array([0,0]), color="b"):
+    def add_vectors(self, vectors, origin=np.array([0,0]), color="k"):
         self.vectors   = vectors
-        self._x_range_   = [min(vectors[:,0].min(), 0) - 2, max(vectors[:,0].max() + 2, 0)]
-        self._y_range_   = [min(vectors[:,1].min(), 0) - 2, max(vectors[:,1].max() + 2, 0)]
+        self._x_range_   = [min(vectors[:,0].min(), self._x_range_[0]) - 2, max(vectors[:,0].max() + 2, self._x_range_[1])]
+        self._y_range_   = [min(vectors[:,1].min(), self._y_range_[0]) - 2, max(vectors[:,1].max() + 2, self._y_range_[1])]
         
         ax = self._fig_.gca()
         for v in self.vectors:
             #label = "$\\begin{bmatrix}" + str(v[0]) + "\\\\" + str(v[1]) + "\\end{bmatrix}$"
-            ax.arrow(origin[0], origin[1],v[0] - origin[0], v[1] - origin[1], head_width=self.head_width, head_length=self.head_length, fc='k', ec='k')
-            ax.text(v[0],v[1], str(v), style='italic', bbox={'facecolor':'red', 'alpha':0.3, 'pad':0.5})
+            ax.arrow(origin[0], origin[1],v[0] - origin[0], v[1] - origin[1], head_width=self.head_width, head_length=self.head_length, fc=color, ec=color)
+            if(self.vector_label):
+                ax.text(v[0],v[1], str(v), style='italic', bbox={'facecolor':'red', 'alpha':0.3, 'pad':0.5})
         ax.scatter(origin[0],origin[1])
         ax.set_xlabel("X-axis")
         ax.set_ylabel("Y-axis")
@@ -52,10 +54,10 @@ class Plot2DVectors:
             self._y_range_[0] = vector[1] - 2
         elif(vector[1] > self._y_range_[1]):
             self._y_range_[1] = vector[1] + 2
-        self.set_axes_limit()
-        
+            
         ax.arrow(origin[0], origin[1],vector[0] - origin[0], vector[1] - origin[1], head_width=self.head_width, head_length=self.head_length, fc='k', ec='k')
-        ax.text(vector[0],vector[1], str(vector), style='italic', bbox={'facecolor':'red', 'alpha':0.3, 'pad':0.5})
+        if(self.vector_label):
+            ax.text(vector[0],vector[1], str(vector), style='italic', bbox={'facecolor':'red', 'alpha':0.3, 'pad':0.5})
         ax.scatter(origin[0],origin[1])
         ax.set_xlabel("X-axis")
         ax.set_ylabel("Y-axis")
