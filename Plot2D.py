@@ -12,7 +12,7 @@ SIZE = 8
 plt.rc('font', size=SIZE)   
 
 class Plot2DVectors:
-    def __init__(self, title="", vector_label = True, head_width=0.3, head_length=0.2):
+    def __init__(self, title="", vector_label = True, head_width=0.15, head_length=0.2):
         self.vector_label = vector_label
         self._x_range_   = [0, 0]
         self._y_range_   = [0, 0]
@@ -26,15 +26,15 @@ class Plot2DVectors:
         
     def add_vectors(self, vectors, origin=np.array([0,0]), color="k"):
         self.vectors   = vectors
-        self._x_range_   = [min(vectors[:,0].min(), self._x_range_[0]) - 2, max(vectors[:,0].max() + 2, self._x_range_[1])]
-        self._y_range_   = [min(vectors[:,1].min(), self._y_range_[0]) - 2, max(vectors[:,1].max() + 2, self._y_range_[1])]
+        self._x_range_   = [min(vectors[:,0].min(), self._x_range_[0]) - 0.5, max(vectors[:,0].max() + 0.5, self._x_range_[1])]
+        self._y_range_   = [min(vectors[:,1].min(), self._y_range_[0]) - 0.5, max(vectors[:,1].max() + 0.5, self._y_range_[1])]
         
         ax = self._fig_.gca()
         for v in self.vectors:
             #label = "$\\begin{bmatrix}" + str(v[0]) + "\\\\" + str(v[1]) + "\\end{bmatrix}$"
-            ax.arrow(origin[0], origin[1],v[0] - origin[0], v[1] - origin[1], head_width=self.head_width, head_length=self.head_length, fc=color, ec=color)
+            ax.arrow(origin[0], origin[1],v[0] - origin[0], v[1] - origin[1], head_width=self.head_width, head_length=self.head_length, fc=color, ec=color, alpha=0.6)
             if(self.vector_label):
-                ax.text(v[0],v[1], str(v), style='italic', bbox={'facecolor':'red', 'alpha':0.3, 'pad':0.5})
+                ax.text(v[0],v[1], r"""$[""" + str(v[0]) + """, """ + str(v[1]) + """]$""", style='italic', bbox={'facecolor':color, 'alpha':0.2, 'pad':0.5})
         ax.scatter(origin[0],origin[1])
         ax.set_xlabel("X-axis")
         ax.set_ylabel("Y-axis")
@@ -46,14 +46,14 @@ class Plot2DVectors:
         ax = self._fig_.gca()
         self.vectors = np.vstack((self.vectors, vector))
         if(vector[0] < self._x_range_[0]):
-            self._x_range_[0] = vector[0] - 2
+            self._x_range_[0] = vector[0] - 0.5
         elif(vector[0] > self._x_range_[1]):
-            self._x_range_[1] = vector[0] + 2
+            self._x_range_[1] = vector[0] + 0.5
         
         if(vector[1] < self._y_range_[0]):
-            self._y_range_[0] = vector[1] - 2
+            self._y_range_[0] = vector[1] - 0.5
         elif(vector[1] > self._y_range_[1]):
-            self._y_range_[1] = vector[1] + 2
+            self._y_range_[1] = vector[1] + 0.5
             
         ax.arrow(origin[0], origin[1],vector[0] - origin[0], vector[1] - origin[1], head_width=self.head_width, head_length=self.head_length, fc='k', ec='k')
         if(self.vector_label):
@@ -111,4 +111,112 @@ plt2D.add_vectors(vectors, origin)
 vector = np.array([3,3])
 plt2D.add_vector(vector)
 plt2D.show()
+"""
+
+from plotly.offline import plot
+import plotly.graph_objs as go
+
+class Plot3DVectors:
+    def __init__(self, title="", vector_label = True, head_width=0.15, head_length=0.2):
+        self.vector_label = vector_label
+        self._x_range_   = [0, -np.inf]
+        self._y_range_   = [0, -np.inf]
+        self._z_range_   = [0, -np.inf]
+        self._fig_       = None
+        self._fig_list_  = []
+        self._layout_    = None
+        #plt.close()
+        self.vectors     = None
+        self.head_width  = head_width  # TODO
+        self.head_length = head_length # TODO
+        #plt.title(title) # TODO
+        #plt.grid()       # TODO
+        
+    def add_vectors(self, vectors, color="k"):
+        self.vectors     = vectors.T
+        self._x_range_   = [min(self.vectors[0].min() - 0.5, self._x_range_[0]), max(self.vectors[0].max() + 0.5, self._x_range_[1])]
+        self._y_range_   = [min(self.vectors[1].min() - 0.5, self._y_range_[0]), max(self.vectors[1].max() + 0.5, self._y_range_[1])]
+        self._z_range_   = [min(self.vectors[2].min() - 0.5, self._z_range_[0]), max(self.vectors[2].max() + 0.5, self._z_range_[1])]
+        print(self._x_range_, self._y_range_, self._z_range_)
+        self.__add_data__(vectors,'blue')
+    
+    def __add_data__(self, vectors, color_):
+        line_vectors = np.empty(shape=(3,len(vectors)*3))
+        i = 0
+        for x in self.vectors[0]:
+            for c in [0,x, None]:
+                line_vectors[0,i] = c
+                i += 1
+        
+        i = 0
+        for y in self.vectors[1]:
+            for c in [0,y, None]:
+                line_vectors[1,i] = c
+                i += 1
+        
+        i = 0
+        for z in self.vectors[2]:
+            for c in [0, z, None]:
+                line_vectors[2,i] = c
+                i += 1
+        
+        vectors_fig = go.Scatter3d(
+                                    x=line_vectors[0],
+                                    y=line_vectors[1],
+                                    z=line_vectors[2],
+                                    mode='lines',
+                                    name='Vectors',
+                                    marker=dict(color=color_),
+                                )
+        scatter = go.Scatter3d(
+                                x=self.vectors[0],
+                                y=self.vectors[1],
+                                z=self.vectors[2],
+                                mode='markers',
+                                marker=dict(color=color_),
+                                name='',
+                                showlegend=False
+                              )
+        txt=[]
+        for v in vectors:
+            txt.append(r'''[''' + str(v[0]) + ''',''' + str(v[1]) + ''',''' + str(v[2]) + ''']''' )
+        txt_plt = go.Scatter3d(
+                                x = self.vectors[0],
+                                y = self.vectors[1],
+                                z = self.vectors[2],
+                                mode='text',
+                                text=txt,
+                                marker={'opacity': 0.3},
+                                textfont={'size': 10, 'color': color_},
+                                name="Co-ordinates",
+                              )
+        
+        layout = go.Layout(
+                            scene = dict(
+                                            xaxis=dict(range=[self._x_range_[0], self._x_range_[1]]),
+                                            yaxis=dict(range=[self._y_range_[0], self._y_range_[1]]),
+                                            zaxis=dict(range=[self._z_range_[0], self._z_range_[1]])
+                                        )
+                          )
+        self._fig_list_.extend([vectors_fig,scatter, txt_plt])
+        self._layout_ = layout
+    
+    def fig(self):
+        return go.Figure(data = self._fig_list_, layout = self._layout_)
+    
+    def show(self):
+        plot(self.fig())
+
+"""
+# Example:
+vectors = np.array([
+                    [1,0,0],
+                    [0,1,0],
+                    [0,0,1],
+                    [1,1,1],
+                   ])
+plt3D = Plot3DVectors("Vectors")
+plt3D.add_vectors(vectors)
+plt3D.add_vectors(vectors)
+plt3D.show()
 """
