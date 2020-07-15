@@ -8,14 +8,15 @@ Created on Fri Jul 10 10:23:55 2020
 
 import numpy as np
 import matplotlib.pyplot as plt
-from Plot2D import Plot2DVectors as vt
+from PlotVectors import Plot2DVectors as vt2D
+from PlotVectors import Plot3DVectors as vt3D
 
-class Transform:
+class Transform2D:
     def __init__(self, transform: np.ndarray, vector_label: bool = True):
         self.transform = transform
-        self._plot_orig_         = vt("Original vectors", vector_label)
-        self._plot_tf_           = vt("Transformed vectors", vector_label)
-        self._plot_combine_      = vt("Original[blue] /Transformed[red] vectors", vector_label)
+        self._plot_orig_         = vt2D("Original vectors", vector_label)
+        self._plot_tf_           = vt2D("Transformed vectors", vector_label)
+        self._plot_combine_      = vt2D("Original[blue] /Transformed[red] vectors", vector_label)
         self._fig_               = plt.figure()
         self.transformed_vectors = None
         self.allowed_opr         = set(np.__all__)
@@ -24,6 +25,8 @@ class Transform:
     def __exec_equation__(self,s: str):
         s = s.lower()
         s = s.replace("^","**")
+        s = s.replace("[","(")
+        s = s.replace("]",")")
         r = []
         i=0
         while(i<len(s)):
@@ -73,17 +76,7 @@ class Transform:
         
         ax = self._plot_combine_._fig_.gca()
         ax.scatter(x, y, c=color[0])
-        """
-        x = np.linspace(x_range_tf[0], x_range_tf[1], count)
-        eq, status = self.__exec_equation__(eq, x)
-        if(status==False): # equation is not correct, No need to check for range
-            return False, None
-        
-        try:
-            y = eval(eq)
-        except:            # equation is correct, but range is not correct
-            return True, False
-        """
+
         orig_eq = np.vstack((x, y))
         transformed_eq = np.matmul(self.transform, orig_eq)
         
@@ -143,8 +136,6 @@ class Transform:
             plot._y_range_[0] = y_min
         if(y_max > plot._y_range_[1]):
             plot._y_range_[1] = y_max
-        print(matrix)
-        print("QQ",(x_min, x_max), (y_min, y_max))   
         return plot._x_range_, plot._y_range_
     
     def add_vectors(self, vectors: np.ndarray, origin = np.array([0,0])):
@@ -178,7 +169,7 @@ vectors = np.array([
                    ])
 
 
-tf = Transform(transform)
+tf = Transform2D(transform)
 tf.add_vectors(vectors)
 
 '''
@@ -199,4 +190,49 @@ tf.add_equation("-sqrt(9-x^2)",
                 count = 100, )
 
 tf.show()
+"""
+
+
+
+class Transform3D:
+    def __init__(self, transform: np.ndarray, vector_label: bool = True):
+        self.transform           = transform
+        self._plot_orig_         = vt3D("Original vectors", vector_label)
+        self._plot_tf_           = vt3D("Transformed vectors", vector_label)
+        self._plot_combine_      = vt3D("Original[blue] /Transformed[red] vectors", vector_label)
+        self.transformed_vectors = None
+    
+    def add_vectors(self, vectors: np.ndarray):
+        self.transformed_vectors = np.matmul(self.transform, vectors.T).T
+        self._plot_orig_.add_vectors(vectors, color='blue', legand="Original vectors", showlegend=True)
+        self._plot_combine_.add_vectors(self.transformed_vectors, color='red', legand="Transformed vectors", showlegend=True)
+        self._plot_combine_.add_vectors(vectors, color='blue', legand="Original vectors", showlegend=True)
+        self._plot_tf_.add_vectors(self.transformed_vectors, color='red', legand="Transformed vectors", showlegend=True)
+    
+    def show(self):
+        self._plot_orig_.show()
+        self._plot_tf_.show()
+        self._plot_combine_.show()
+        
+    def fig(self):
+        return (self._plot_orig_.fig(), self._plot_tf_.fig(), self._plot_combine_.fig())
+
+"""
+# Example
+transform3D = np.array([
+                    [2.0, -0.5,  0.5],
+                    [1.0,  0.5, -0.5],
+                    [0.5,  -0.5, 1.5]
+                   ])
+vectors3D = np.array([
+                    [1, 0, 0],
+                    [0, 1, 0],
+                    [0, 0, 1],
+                    [1, 1, 1],
+                   ])
+
+
+tf3D = Transform3D(transform3D)
+tf3D.add_vectors(vectors3D)
+tf3D.show()
 """
