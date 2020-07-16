@@ -193,6 +193,8 @@ tf.show()
 """
 
 
+import matplotlib.pyplot as plt
+import plotly.graph_objs as go
 
 class Transform3D:
     def __init__(self, transform: np.ndarray, vector_label: bool = True):
@@ -201,13 +203,156 @@ class Transform3D:
         self._plot_tf_           = vt3D("Transformed vectors", vector_label)
         self._plot_combine_      = vt3D("Original[blue] /Transformed[red] vectors", vector_label)
         self.transformed_vectors = None
+        self.allowed_opr         = set(np.__all__)
+        
+    def __exec_equation__(self,s: str):
+        s = s.lower()
+        s = s.replace("^","**")
+        s = s.replace("[","(")
+        s = s.replace("]",")")
+        r = []
+        i=0
+        while(i<len(s)):
+            c = s[i]
+            if(c=='x' or c=='y'):
+                r.append(c)
+            elif(c.isalpha()):
+                cmd = []
+                r.append("np.")
+                while(i<len(s) and s[i].isalpha()):
+                    c = s[i]
+                    cmd.append(c)
+                    i += 1
+                i -= 1
+                cmd = "".join(cmd)
+                if(cmd in self.allowed_opr):
+                    r.append(cmd)
+                else:
+                    return None, False
+            else:
+                r.append(c)
+            i += 1
+        
+        return "".join(r), True
     
+    def add_equation(self, eq: str, 
+                     range_ = (), 
+                     count: int   = 10,
+                     opacity = 0.5,
+                     ):
+        if(range_==tuple()):
+            range_ = (self._plot_combine_._x_range_[0], self._plot_combine_._x_range_[1])
+        
+        x = np.linspace(range_[0], range_[1], count)
+        y = np.linspace(range_[0], range_[1], count)
+        x, y = np.meshgrid(x, y)
+
+        eq, status = self.__exec_equation__(eq)
+        if(status==False): # equation is not correct, No need to check for range
+            return False, None
+        
+        try:
+            z = eval(eq)
+        except:            # equation seems to be correct, but range might not correct
+                           # (Range can be wrong like if, equation encounters sqrt(-1) or divide by 0, etc in that range)
+            return True, False
+        
+        cmap = plt.get_cmap("tab10")
+        colorscale  = [[0, 'rgb' + str(cmap(1)[0:5])], 
+                       [1, 'rgb' + str(cmap(2)[0:5])]]
+        colorscale2 = [[0, 'rgb' + str(cmap(4)[0:3])], 
+                       [1, 'rgb' + str(cmap(6)[0:3])]]
+        trace1 = go.Surface(x=x, y=y, z=z, opacity=opacity, colorscale=colorscale, showscale=False)#, col)
+        
+        X = x.reshape((np.product(x.shape)))
+        Y = y.reshape((np.product(y.shape)))
+        Z = z.reshape((np.product(z.shape)))
+        
+
+        vectors = np.empty(shape=(3,np.product(X.shape)))
+        vectors[0] = X
+        vectors[1] = Y
+        vectors[2] = Z
+        
+        tf = np.matmul(self.transform, vectors)
+        X, Y, Z = tf[0], tf[1], tf[2]
+        
+        x = np.empty(shape=z.shape)
+        y = np.empty(shape=z.shape)
+        z = np.empty(shape=z.shape)
+        c = 0
+        for i in range(z.shape[0]):
+            for j in range(z.shape[1]):
+                x[i][j] = X[c]
+                y[i][j] = Y[c]
+                z[i][j] = Z[c]
+                c += 1
+        
+        trace2 = go.Surface(x=x, y=y, z=z, opacity=opacity, colorscale=colorscale2, showscale=False)#, col)
+        
+        self._plot_combine_._fig_list_.extend([trace1,trace2])
+        self._plot_orig_._fig_list_.extend([trace1])
+        self._plot_tf_._fig_list_.extend([trace2])
+        
+        
+        (x_min_orig, x_max_orig), (y_min_orig, y_max_orig), (z_min_orig, z_max_orig) = self.__get_axes_limit__(vectors, self._plot_orig_)
+        self._plot_orig_.set_axis((x_min_orig, x_max_orig), (y_min_orig, y_max_orig), (z_min_orig, z_max_orig))
+        
+        (x_min_tf, x_max_tf),     (y_min_tf, y_max_tf)    , (z_min_tf, z_max_tf)     = self.__get_axes_limit__(tf, self._plot_tf_)
+        self._plot_tf_.set_axis((x_min_tf, x_max_tf),     (y_min_tf, y_max_tf)    , (z_min_tf, z_max_tf))
+        
+        x_min = min(x_min_orig, x_min_tf)
+        x_max = max(x_max_orig, x_max_tf)
+        
+        y_min = min(y_min_orig, y_min_tf)
+        y_max = max(y_max_orig, y_max_tf)
+        
+        z_min = min(z_min_orig, z_min_tf)
+        z_max = max(z_max_orig, z_max_tf)
+        self._plot_combine_.set_axis((x_min, x_max),     (y_min, y_max)    , (z_min, z_max))
+        
+        #print((x_min, x_max),     (y_min, y_max)    , (z_min, z_max))
+        #print((x_min_orig, x_max_orig), (y_min_orig, y_max_orig), (z_min_orig, z_max_orig))
+        #print((x_min_tf, x_max_tf),     (y_min_tf, y_max_tf)    , (z_min_tf, z_max_tf))
+   
+        return True, True
+        
+    def __get_axes_limit__(self, matrix, plot):
+        x_min, x_max = min(np.nanmin(matrix[0]), plot._x_range_[0]), max(np.nanmax(matrix[0]), plot._x_range_[1])
+        y_min, y_max = min(np.nanmin(matrix[1]), plot._x_range_[0]), max(np.nanmax(matrix[1]), plot._x_range_[1])
+        z_min, z_max = min(np.nanmin(matrix[2]), plot._x_range_[0]), max(np.nanmax(matrix[2]), plot._x_range_[1])
+        
+        return (x_min, x_max), (y_min, y_max), (z_min, z_max)
+        
     def add_vectors(self, vectors: np.ndarray):
         self.transformed_vectors = np.matmul(self.transform, vectors.T).T
-        self._plot_orig_.add_vectors(vectors, color='blue', legand="Original vectors", showlegend=True)
-        self._plot_combine_.add_vectors(self.transformed_vectors, color='red', legand="Transformed vectors", showlegend=True)
-        self._plot_combine_.add_vectors(vectors, color='blue', legand="Original vectors", showlegend=True)
-        self._plot_tf_.add_vectors(self.transformed_vectors, color='red', legand="Transformed vectors", showlegend=True)
+        self._plot_orig_.add_vectors(
+                                         vectors,
+                                         color='blue',
+                                         legand="Original vectors",
+                                         showlegend=True
+                                    )
+        
+        self._plot_combine_.add_vectors(
+                                            self.transformed_vectors, 
+                                            color='red', 
+                                            legand="Transformed vectors", 
+                                            showlegend=True
+                                       )
+        
+        self._plot_combine_.add_vectors(
+                                            vectors, 
+                                            color='blue', 
+                                            legand="Original vectors", 
+                                            showlegend=True
+                                       )
+        
+        self._plot_tf_.add_vectors(
+                                        self.transformed_vectors, 
+                                        color='red', 
+                                        legand="Transformed vectors", 
+                                        showlegend=True
+                                   )
     
     def show(self):
         self._plot_orig_.show()
@@ -234,5 +379,6 @@ vectors3D = np.array([
 
 tf3D = Transform3D(transform3D)
 tf3D.add_vectors(vectors3D)
+tf3D.add_equation("sqrt[9 - (x-0)^2 - (y-0)^2] + 0")
 tf3D.show()
 """
