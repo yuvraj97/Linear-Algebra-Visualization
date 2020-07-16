@@ -17,7 +17,6 @@ class Plot2DVectors:
         self._x_range_   = [0, 0]
         self._y_range_   = [0, 0]
         self._fig_       = plt.figure()
-        #plt.close()
         self.vectors     = None
         self.head_width  = head_width
         self.head_length = head_length
@@ -39,8 +38,6 @@ class Plot2DVectors:
         ax.set_xlabel("X-axis")
         ax.set_ylabel("Y-axis")
         self.set_axes_limit()
-        #self._fig_ = plt.gcf()
-        #plt.close()
         
     def add_vector(self,vector, origin=np.array([0,0])):
         ax = self._fig_.gca()
@@ -62,9 +59,7 @@ class Plot2DVectors:
         ax.set_xlabel("X-axis")
         ax.set_ylabel("Y-axis")
         self.set_axes_limit()
-        #self._fig_ = plt.gcf()
-        #plt.close()
-    
+        
     def setX_limit(self):
         ax = self._fig_.gca()
         ax.set_xlim(self._x_range_[0], self._x_range_[1])
@@ -84,7 +79,6 @@ class Plot2DVectors:
         self._fig_.set_size_inches(8,6)
         self._fig_.savefig(name, dpi = 100)
         #self._fig_.savefig(name, bbox_inches='tight')
-        #plt.close()
         
     def fig(self):
         return self._fig_
@@ -113,34 +107,29 @@ plt2D.add_vector(vector)
 plt2D.show()
 """
 
-from plotly.offline import plot
+
 import plotly.graph_objs as go
+from plotly.offline import plot
 
 class Plot3DVectors:
-    def __init__(self, title="", vector_label = True, head_width=0.15, head_length=0.2):
-        self.vector_label = vector_label
+    def __init__(self, title=""):
         self._x_range_   = [0, -np.inf]
         self._y_range_   = [0, -np.inf]
         self._z_range_   = [0, -np.inf]
         self._fig_       = None
         self._fig_list_  = []
         self._layout_    = None
-        #plt.close()
         self.vectors     = None
-        self.head_width  = head_width  # TODO
-        self.head_length = head_length # TODO
-        #plt.title(title) # TODO
-        #plt.grid()       # TODO
+        self._title_     = title
         
-    def add_vectors(self, vectors, color="k"):
+    def add_vectors(self, vectors, color="blue", legand="", showlegend=True):
         self.vectors     = vectors.T
-        self._x_range_   = [min(self.vectors[0].min() - 0.5, self._x_range_[0]), max(self.vectors[0].max() + 0.5, self._x_range_[1])]
-        self._y_range_   = [min(self.vectors[1].min() - 0.5, self._y_range_[0]), max(self.vectors[1].max() + 0.5, self._y_range_[1])]
-        self._z_range_   = [min(self.vectors[2].min() - 0.5, self._z_range_[0]), max(self.vectors[2].max() + 0.5, self._z_range_[1])]
-        print(self._x_range_, self._y_range_, self._z_range_)
-        self.__add_data__(vectors,'blue')
+        self._x_range_   = [min(self.vectors[0].min(), self._x_range_[0]), max(self.vectors[0].max(), self._x_range_[1])]
+        self._y_range_   = [min(self.vectors[1].min(), self._y_range_[0]), max(self.vectors[1].max(), self._y_range_[1])]
+        self._z_range_   = [min(self.vectors[2].min(), self._z_range_[0]), max(self.vectors[2].max(), self._z_range_[1])]
+        self.__add_data__(vectors,color,legand,showlegend)
     
-    def __add_data__(self, vectors, color_):
+    def __add_data__(self, vectors, color_, legand, showlegend):
         line_vectors = np.empty(shape=(3,len(vectors)*3))
         i = 0
         for x in self.vectors[0]:
@@ -165,8 +154,9 @@ class Plot3DVectors:
                                     y=line_vectors[1],
                                     z=line_vectors[2],
                                     mode='lines',
-                                    name='Vectors',
+                                    name=legand,
                                     marker=dict(color=color_),
+                                    showlegend=showlegend
                                 )
         scatter = go.Scatter3d(
                                 x=self.vectors[0],
@@ -189,20 +179,38 @@ class Plot3DVectors:
                                 marker={'opacity': 0.3},
                                 textfont={'size': 10, 'color': color_},
                                 name="Co-ordinates",
+                                showlegend=showlegend
                               )
         
+        self._fig_list_.extend([vectors_fig,scatter, txt_plt])
+        
+    def fig(self):
         layout = go.Layout(
                             scene = dict(
-                                            xaxis=dict(range=[self._x_range_[0], self._x_range_[1]]),
-                                            yaxis=dict(range=[self._y_range_[0], self._y_range_[1]]),
-                                            zaxis=dict(range=[self._z_range_[0], self._z_range_[1]])
-                                        )
+                                            xaxis=dict(range=[self._x_range_[0] - 0.5, self._x_range_[1] + 0.5]),
+                                            yaxis=dict(range=[self._y_range_[0] - 0.5, self._y_range_[1] + 0.5]),
+                                            zaxis=dict(range=[self._z_range_[0] - 0.5, self._z_range_[1] + 0.5])
+                                        ),
+                            title=dict(text= self._title_)
                           )
-        self._fig_list_.extend([vectors_fig,scatter, txt_plt])
         self._layout_ = layout
+        fig = go.Figure(data = self._fig_list_, layout = self._layout_)
+        fig.update_layout(autosize=False,
+                          width=800, height=800,)
+        return fig
+
+    def set_axis(self,x_range, y_range, z_range):    
+        self._x_range_[0] = x_range[0]
+        self._x_range_[1] = x_range[1]
+        
+        self._y_range_[0] = y_range[0]
+        self._y_range_[1] = y_range[1]
+        
+        self._z_range_[0] = z_range[0]
+        self._z_range_[1] = z_range[1]
     
-    def fig(self):
-        return go.Figure(data = self._fig_list_, layout = self._layout_)
+    def get_axis(self):
+        return self._x_range_, self._y_range_, self._z_range_, 
     
     def show(self):
         plot(self.fig())
