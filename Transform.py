@@ -193,7 +193,6 @@ tf.show()
 """
 
 
-import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 
 class Transform3D:
@@ -235,6 +234,14 @@ class Transform3D:
         
         return "".join(r), True
     
+    @staticmethod
+    def __flatten__(x,y,z):
+        vectors = np.empty(shape=(3,np.product(x.shape)))
+        vectors[0] = x.reshape((np.product(x.shape)))
+        vectors[1] = y.reshape((np.product(y.shape)))
+        vectors[2] = z.reshape((np.product(z.shape)))
+        return vectors
+    
     def add_equation(self, eq: str, 
                      range_ = (), 
                      count: int   = 10,
@@ -256,39 +263,13 @@ class Transform3D:
         except:            # equation seems to be correct, but range might not correct
                            # (Range can be wrong like if, equation encounters sqrt(-1) or divide by 0, etc in that range)
             return True, False
-        
-        cmap = plt.get_cmap("tab10")
-        colorscale  = [[0, 'rgb' + str(cmap(1)[0:5])], 
-                       [1, 'rgb' + str(cmap(2)[0:5])]]
-        colorscale2 = [[0, 'rgb' + str(cmap(4)[0:3])], 
-                       [1, 'rgb' + str(cmap(6)[0:3])]]
-        trace1 = go.Surface(x=x, y=y, z=z, opacity=opacity, colorscale=colorscale, showscale=False)#, col)
-        
-        X = x.reshape((np.product(x.shape)))
-        Y = y.reshape((np.product(y.shape)))
-        Z = z.reshape((np.product(z.shape)))
-        
 
-        vectors = np.empty(shape=(3,np.product(X.shape)))
-        vectors[0] = X
-        vectors[1] = Y
-        vectors[2] = Z
+        trace1 = go.Surface(x=x, y=y, z=z, opacity=opacity, colorscale='Viridis', showscale=False)#, col)
         
+        vectors = self.__flatten__(x,y,z)
         tf = np.matmul(self.transform, vectors)
-        X, Y, Z = tf[0], tf[1], tf[2]
-        
-        x = np.empty(shape=z.shape)
-        y = np.empty(shape=z.shape)
-        z = np.empty(shape=z.shape)
-        c = 0
-        for i in range(z.shape[0]):
-            for j in range(z.shape[1]):
-                x[i][j] = X[c]
-                y[i][j] = Y[c]
-                z[i][j] = Z[c]
-                c += 1
-        
-        trace2 = go.Surface(x=x, y=y, z=z, opacity=opacity, colorscale=colorscale2, showscale=False)#, col)
+        x, y, z = tf[0].reshape(x.shape), tf[1].reshape(y.shape), tf[2].reshape(z.shape)
+        trace2 = go.Surface(x=x, y=y, z=z, opacity=opacity, colorscale='YlOrRd', showscale=False)#, col)
         
         self._plot_combine_._fig_list_.extend([trace1,trace2])
         self._plot_orig_._fig_list_.extend([trace1])
@@ -365,9 +346,9 @@ class Transform3D:
 """
 # Example
 transform3D = np.array([
-                    [2.0, -0.5,  0.5],
-                    [1.0,  0.5, -0.5],
-                    [0.5,  -0.5, 1.5]
+                    [-1.0,  0.0,  0.0],
+                    [ 0.0, -1.0,  0.0],
+                    [ 0.0,  0.0, -1.0]
                    ])
 vectors3D = np.array([
                     [1, 0, 0],
@@ -379,6 +360,11 @@ vectors3D = np.array([
 
 tf3D = Transform3D(transform3D)
 tf3D.add_vectors(vectors3D)
-tf3D.add_equation("sqrt[9 - (x-0)^2 - (y-0)^2] + 0")
+tf3D.add_equation(
+                    "sqrt[9 - (x-0)^2 - (y-0)^2] + 0",
+                    range_  = [-3, 3],
+                    count   = 30, 
+                    opacity = 0.5,
+                 )
 tf3D.show()
 """
