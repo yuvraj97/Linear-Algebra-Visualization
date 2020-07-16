@@ -196,11 +196,11 @@ tf.show()
 import plotly.graph_objs as go
 
 class Transform3D:
-    def __init__(self, transform: np.ndarray, vector_label: bool = True):
+    def __init__(self, transform: np.ndarray):
         self.transform           = transform
-        self._plot_orig_         = vt3D("Original vectors", vector_label)
-        self._plot_tf_           = vt3D("Transformed vectors", vector_label)
-        self._plot_combine_      = vt3D("Original[blue] /Transformed[red] vectors", vector_label)
+        self._plot_orig_         = vt3D("Original vectors")
+        self._plot_tf_           = vt3D("Transformed vectors")
+        self._plot_combine_      = vt3D("Original[blue] /Transformed[red] vectors")
         self.transformed_vectors = None
         self.allowed_opr         = set(np.__all__)
         
